@@ -239,7 +239,9 @@ private struct ZoomWord: View {
 /// While it's held the word is in `paper` with the pencil under it.
 private struct OriginalWord: View {
     let model: EditorModel
-    @State private var pressed = false
+    /// Resets when the press ends, also when SwiftUI cancels it, which
+    /// skips a drag's `onEnded`.
+    @GestureState private var pressed = false
     @State private var hovered = false
 
     var body: some View {
@@ -253,9 +255,8 @@ private struct OriginalWord: View {
             .contentShape(Rectangle())
             .opacity(enabled ? 1 : 0.38)
             .onHover { over in hovered = over; if over { model.prepareOriginal() } }
-            .gesture(DragGesture(minimumDistance: 0)
-                .onChanged { _ in if !pressed { pressed = true; model.holdOriginal(true) } }
-                .onEnded { _ in pressed = false; model.holdOriginal(false) })
+            .gesture(DragGesture(minimumDistance: 0).updating($pressed) { _, pressed, _ in pressed = true })
+            .onChange(of: pressed) { _, pressed in model.holdOriginal(pressed) }
             .allowsHitTesting(enabled)
             .help("Hold to show the original (\\). Hold T to turn the photograph upside down.")
             .accessibilityElement()
